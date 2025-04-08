@@ -1,3 +1,4 @@
+setwd("/Volumes/My_Passport/paper2_result/Github/CAR-E_2/")
 library (org.Hs.eg.db)
 keytypes(org.Hs.eg.db)
 library(clusterProfiler)
