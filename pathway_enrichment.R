@@ -1,4 +1,5 @@
 #setwd("/Volumes/My_Passport/paper2_result/Github/CAR-E_2/")
+rm(list = ls())
 library (org.Hs.eg.db)
 keytypes(org.Hs.eg.db)
 library(clusterProfiler)
@@ -17,7 +18,6 @@ require(DOSE)
 
 if(!dir.exists("pathway_enrichment"))
   dir.create("pathway_enrichment")
-rm(list = ls())
 #setwd("/Volumes/My_Passport/paper2_result/new_pipeline/DEG/")
 source("GFF.R") # creates p_genes with ensemble IDs and gene symbols
 # read gene sets
@@ -27,7 +27,7 @@ c.7<- read.gmt("data/c7.all.v2024.1.Hs.symbols.gmt")
 
 data<- read.table("data/countMatrix_all.txt", header = T)
 geneIDs<- data$Geneid
-gene_IDs <- read.table("/Volumes/My_Passport/paper2_result/new_pipeline/Ensemble_IDs.txt", header = T , fill = T)
+gene_IDs <- read.table("data/Ensemble_IDs.txt", header = T , fill = T)
 gene_IDs[gene_IDs==""]<-NA
 colnames(gene_IDs) <- c("ensembl_gene_id", "hgnc_symbol")
 
@@ -41,7 +41,7 @@ data<- data[complete.cases(data),]
 
 #setwd("/Volumes/My_Passport/paper2_result/new_pipeline/pathway_analysis/")
 #getwd()
-PATH="/Volumes/My_Passport/paper2_result/new_pipeline/DEG/"
+PATH="/Volumes/My_Passport/paper2_result/new_pipeline/"
 
 for ( i in 1:(length(conditions) - 1))
 {
@@ -99,14 +99,14 @@ for ( i in 1:(length(conditions) - 1))
     pdf(paste0("pathway_enrichment/misgDB_hall", dir_name, ".pdf"), width = 8 , height = 6)
     print(dotplot(msig.hall, showCategory=10, split=".sign") + facet_grid(.~.sign))
     dev.off()
-    # msig.c7 <- GSEA(foldchanges, TERM2GENE=c.7, verbose=FALSE, minGSSize=15,maxGSSize=500
-    #                   ,pvalueCutoff=0.05 )
-    # msig_df_c7 <- data.frame(msig.c7)
-    # msig_df_c7<- msig_df_c7[order(msig_df_c7$NES , decreasing = T), ]
+    msig.c7 <- GSEA(foldchanges, TERM2GENE=c.7, verbose=FALSE, minGSSize=15,maxGSSize=500
+                      ,pvalueCutoff=0.05 )
+    msig_df_c7 <- data.frame(msig.c7)
+    msig_df_c7<- msig_df_c7[order(msig_df_c7$NES , decreasing = T), ]
+
+    dotplot(msig.c7, showCategory=10, split=".sign") + facet_grid(.~.sign)
     # 
-    # dotplot(msig.c7, showCategory=10, split=".sign") + facet_grid(.~.sign)
-    # 
-    write.xlsx(msig_df_hall,  file.path(paste0("pathway_enrichment/",dir_name ,paste0(dir_name, "_c.hall_MsigDB.xlsx")) ) )
+    #write.xlsx(msig_df_hall,  file.path(paste0("pathway_enrichment/",dir_name ,paste0(dir_name, "_c.hall_MsigDB.xlsx")) ) )
     
     pdf(paste0("pathway_enrichment/",dir_name,"IL2_STAT5_SIGNALING.pdf") )
     print(gseaplot(msig.hall , geneSetID = "HALLMARK_IL2_STAT5_SIGNALING"))
