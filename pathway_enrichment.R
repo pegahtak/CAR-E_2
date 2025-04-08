@@ -37,7 +37,7 @@ conditions<-creat_conditions(data)
 
 rownames(data)<- geneIDs
 data<- data[complete.cases(data),]
-
+geneIDs<- rownames(data)
 
 #setwd("/Volumes/My_Passport/paper2_result/new_pipeline/pathway_analysis/")
 #getwd()
