@@ -92,7 +92,7 @@ for ( i in 1:(length(conditions) - 1))
     foldchanges<- na.omit(foldchanges)
 
     msig.hall <- GSEA(foldchanges, TERM2GENE=c.hall, verbose=FALSE, minGSSize=15,maxGSSize=500
-                      ,pvalueCutoff=0.05 )
+                      ,pvalueCutoff=0.01 )
     msig_df_hall <- data.frame(msig.hall)
     msig_df_hall<- msig_df_hall[order(msig_df_hall$NES , decreasing = T), ]
     

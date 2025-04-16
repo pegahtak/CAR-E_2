@@ -1,5 +1,4 @@
-# TF activity heatmp on control, Full CAR + CAR-E + wt IL2 , cd3only , 4-1bb, icd del
-#setwd("/Volumes/My_Passport/paper2_result/new_pipeline/")
+setwd("/Volumes/My_Passport/paper2_result/Github/CAR-E_2/")
 library(decoupleR)
 library(dplyr)
 library(tibble)
@@ -9,8 +8,16 @@ library(pheatmap)
 library(ggrepel)
 library(purrr)
 library(DESeq2)
-
 rm (list = ls())
+
+### USER only changes these lines###
+dir_name<-"TF_CAR_constructs_V7" # put the name of contrast or figure
+samples<- list("Full_CD8_V7","Costimonly_V7","CD3_only_V7","fulldel_CD8_V7") # put conditions of interest
+n_tfs <- 50 # number of top most variable TFs among samples
+#### END ####
+
+
+
 #net <- get_collectri(organism='human', split_complexes=FALSE)
 net<- read.table("data/collectRi_net.txt" , header = T)
 net$source[net$source=="STAT5A"]<-"STAT5"
@@ -64,13 +71,8 @@ conditions<- creat_conditions(data)
 if (!dir.exists("TF_activity"))
   dir.create("TF_acti")
 
-dir_name<-"TF_CAR_constucts"
-samples<- list("Full_CD8_V7", "Costimonly_CD8_V7", "CD3only_CD8_V7", "fulldel_CD8_V7", "Full_CD8_control")
 
-#samples_ind <- lapply(samples, function(sample) grep(sample, colnames(data)))
 samples_ind <-lapply(samples, function(sample) grep(sample, colnames(data)))
-
-#all_indices<- unlist(samples_ind)
 data_files<- data[, unlist(samples_ind)]
 
 meta<- matrix("", nrow = ncol(data_files) , ncol=1)
@@ -81,15 +83,13 @@ sample_names<- colnames(data_files)
 rownames(meta)<- sample_names
 meta<- as.data.frame(meta)
 meta[,1]<- substr(rownames(meta) , 1 , nchar(rownames(meta))-2 )
-# meta$samplenames<- c(paste0(group1, "_" , 1:length(Trx)) , paste0(group2, "_" , 1:length(Ctrl))) ## add to code
 meta$samplenames<- rownames(meta)
-#meta$Batch<- c( rep(batches$Full_CD8_V7 , 4) , rep(batches$dualCAR_CD8_V7 , 4) )
 meta
 
-data_files<-data_files%>%rownames_to_column(var="SYMBOL")
-rownames(data_files)<- data_files$SYMBOL
+# data_files<-data_files%>%rownames_to_column(var="SYMBOL")
+# rownames(data_files)<- data_files$SYMBOL
 
-data_files$SYMBOL<-NULL
+#data_files$SYMBOL<-NULL
 # deseq with rlog 
 dds <- DESeqDataSetFromMatrix(data_files, meta, design = ~ sample_type)
 dds <- estimateSizeFactors(dds)
@@ -97,7 +97,7 @@ normalized_counts <- counts(dds, normalized=TRUE)
 
 sample_acts <- run_ulm(mat=normalized_counts, net=net, .source='source', .target='target',
                        .mor='mor')
-n_tfs <- 40
+
 
 # Transform to wide matrix
 sample_acts_mat <- sample_acts %>%
@@ -105,6 +105,15 @@ sample_acts_mat <- sample_acts %>%
               values_from = 'score') %>%
   column_to_rownames('condition') %>%
   as.matrix()
+
+# V7_ctrl_select<- c(paste0("Full_CD8_V7_", 1:4), paste0("Full_CD8_control_", 1:4))
+# tfs <- sample_acts[sample_acts$condition %in% V7_ctrl_select,] %>%
+#   group_by(source) %>%
+#   summarise(std = sd(score)) %>%
+#   arrange(-abs(std)) %>%
+#   head(n_tfs) %>%
+#   pull(source)
+
 
 tfs <- sample_acts %>%
   group_by(source) %>%
@@ -114,7 +123,8 @@ tfs <- sample_acts %>%
   pull(source)
 tfs<- c(tfs,"STAT5")
 tfs<- unique(tfs)
-sample_acts_mat <- sample_acts_mat[,tfs]
+ind<- which(colnames(sample_acts_mat)%in% tfs)
+sample_acts_mat <- sample_acts_mat[,ind]
 
 sample_acts_mat <- scale(sample_acts_mat)
 
@@ -125,9 +135,13 @@ my_color = colorRampPalette(c("Darkblue", "white","red"))(palette_length)
 my_breaks <- c(seq(-3, 0, length.out=ceiling(palette_length/2) + 1),
                seq(0.05, 3, length.out=floor(palette_length/2)))
 
+anno_col<- sample_acts_mat%>%t()%>% colnames()%>% substr(. , 1, nchar(.)-2)%>% as.data.frame()
+rownames(anno_col)<- rownames(sample_acts_mat)
 # Plot
 
-pdf(file.path(  paste0("TF_activity_CD4vsCD8", ".pdf")),height = 10, width = 20)
-print(pheatmap(sample_acts_mat, border_color = NA, color=my_color , fontsize_row = 20 , breaks =my_breaks ,fontsize_col = 15 , fontsize = 15))
+pdf(file.path(  paste0("TF_activity/",dir_name, ".pdf")),height = 20, width = 10)
+
+print(pheatmap(t(sample_acts_mat), border_color = NA, color=my_color , fontsize_row = 20 ,annotation_col =  anno_col,
+               breaks =my_breaks ,fontsize_col = 20 , fontsize = 15, labels_col = NULL, labels_row = NULL))
 dev.off()
 
